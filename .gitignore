@@ -1,0 +1,10 @@
+dist
+*.egg-info*
+.svn
+*~
+#*
+*#
+*.pyc
+.DS_Store
+.#*
+*.orig
