@@ -29,6 +29,12 @@ class TicketWorkflowNotifier(Component):
             'comment': req.args.get("comment"),
             }
         ctx['link'] = self.env.abs_href.ticket(ticket.id)
+
+        if ticket.id:
+            old_values = getattr(req, 'ticket_%s_old_values' % ticket.id, {})
+        else:
+            old_values = {}
+        ctx['old_ticket'] = old_values
         return ctx
 
     def notify(self, req, ticket, name):
@@ -43,7 +49,7 @@ class TicketWorkflowNotifier(Component):
         recipients = TextTemplate(section.get('%s.recipients' % name).replace("\\n", "\n")
                                   ).generate(**ctx).render(encoding=None)
         recipients = [r.strip() for r in recipients.split(",")]
-
+        
         WorkflowNotifyEmail(self.env, template_name='ticket_notify_workflow_email.txt',
                             recipients=recipients, data={'body': body}).notify(
             ticket.id, subject, req.authname)
@@ -65,12 +71,29 @@ class TicketWorkflowNotifier(Component):
         return None, None, None
 
     def get_ticket_changes(self, req, ticket, action):
+        old_values = {}
+        for field in ticket.fields:
+            field_name = field['name']
+            if field_name in ticket._old:
+                # If it's in ticket._old, then it's already been changed
+                # by a direct user action before reaching this method;
+                # so we should store the value from before the user's change.
+                old_values[field_name] = ticket._old[field_name]
+            else:
+                # If it's not in ticket._old, then the user hasn't directly
+                # changed it, but workflow actions might change the value.
+                # So we should store the value as it is now, in case it changes.
+                old_values[field_name] = ticket[field_name]
+
+        setattr(req, 'ticket_%s_old_values' % ticket.id, old_values)
         return {}
 
     def apply_action_side_effects(self, req, ticket, action):
         for notification in self.notifications_for_action(action):
             self.log.debug("Notification %s for ticket %s (action: %s)" % (
-                    notification, ticket['id'], action))
+                    notification, 
+                    ticket.id if ticket.exists else "(new ticket)",
+                    action))
             self.notify(req, ticket, notification)
 
     def ticket_deleted(self, ticket):
