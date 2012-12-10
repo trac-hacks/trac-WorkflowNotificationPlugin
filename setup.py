@@ -21,5 +21,7 @@ setup(name='trac-WorkflowNotificationPlugin',
       entry_points = {
         'trac.plugins':
             ['workflow_notification = workflow_notification']
-        }
+        },
+      include_package_data=True,
+      zip_safe=False,
       )

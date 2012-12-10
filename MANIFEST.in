@@ -1,1 +1,1 @@
-graft workflow_notification/templates/
+recursive-include workflow_notification/templates *
