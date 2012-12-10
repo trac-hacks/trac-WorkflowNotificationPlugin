@@ -18,9 +18,11 @@ class TicketWorkflowNotifier(Component):
             if '.' in key:
                 continue
             actions_for_key = [i.strip() for i in section.get(key).split(",")]
-            if action in actions_for_key or '*' in actions_for_key:
+            if action in actions_for_key:
                 yield key
-
+            elif '*' in actions_for_key and not action.startswith('@'):
+                yield key
+            
     def build_template_context(self, req, ticket):
         ctx = Chrome(self.env).populate_data(None, {'CRLF': CRLF})
         ctx['ticket'] = ticket
