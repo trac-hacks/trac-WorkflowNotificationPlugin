@@ -55,6 +55,7 @@ using a `ticket-workflow-notifications` section in `trac.ini`.
 Within this section, each entry is a notification email that may be
 sent out for a ticket.  Here is an example:
 {{{
+[ticket-workflow-notifications]
 notify_reporter_when_accepted = accept
 notify_reporter_when_accepted.body = Hi $ticket.reporter, '$ticket.summary' has been accepted by $change.author. Its status is now $ticket.status.\n\n{% if change.comment %}$change.author said:\n\n$change.comment{% end %}-----\nTicket URL: $link\n$project.name <${project.url or abs_href()}>\n$project.descr
 notify_reporter_when_accepted.recipients = $ticket.reporter, trac-admin@hostname.com, trac_user
@@ -99,5 +100,35 @@ ticket's current state, a username known to Trac, and a hard coded
 email address:
 {{{
 notify_reporter_when_accepted.recipients = $ticket.reporter, trac-admin@hostname.com, trac_user
+}}}
+
+==== Notifications for new tickets ====
+
+Most notifications are configured to refer to one or more workflow actions, 
+like "accept", "leave", "reassign", "resolve", etc.
+
+You can also configure notifications to be triggered when a ticket is
+newly created. To do this, use the special workflow action `@created`
+like so:
+
+{{{
+[ticket-workflow-notifications]
+new_ticket = @created
+new_ticket.body = New ticket $ticket.summary has been created
+new_ticket.recipients = $ticket.owner
+new_ticket.subject = New ticket created
+}}}
+
+==== Notifications for all actions ====
+
+You can also set the special value `*` for a notification, which means
+it will be triggered on every workflow action including ticket creation:
+
+{{{
+[ticket-workflow-notifications]
+ticket_changed = *
+ticket_changed.body = View the ticket here: $link
+ticket_changed.recipients = watchful_user, another_watchful_user
+ticket_changed.subject = Ticket $ticket.id has changed!
 }}}
 

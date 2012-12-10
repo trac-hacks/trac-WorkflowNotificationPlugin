@@ -18,7 +18,7 @@ class TicketWorkflowNotifier(Component):
             if '.' in key:
                 continue
             actions_for_key = [i.strip() for i in section.get(key).split(",")]
-            if action in actions_for_key:
+            if action in actions_for_key or '*' in actions_for_key:
                 yield key
 
     def build_template_context(self, req, ticket):
@@ -69,6 +69,8 @@ class TicketWorkflowNotifier(Component):
 
     def apply_action_side_effects(self, req, ticket, action):
         for notification in self.notifications_for_action(action):
+            self.log.debug("Notification %s for ticket %s (action: %s)" % (
+                    notification, ticket['id'], action))
             self.notify(req, ticket, notification)
 
     def ticket_deleted(self, ticket):
