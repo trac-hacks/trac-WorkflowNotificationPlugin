@@ -11,7 +11,7 @@ except:
 
 setup(name='trac-WorkflowNotificationPlugin',
       version='0.1',
-      description="",
+      description="Configurable notifications for trac tickets tied to workflow actions",
       long_description=long_description,
       packages=['workflow_notification'],
       author='Ethan Jucovy',
