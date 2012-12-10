@@ -84,9 +84,10 @@ will be triggered when the "accept" action occurs.
 
 The following lines define the email subject, body, and recipients for
 a particular notification.  These are all Genshi Text Templates that
-will be rendered with a context that includes the ticket (in its
-current state AFTER the workflow action has been applied); the author
-and comment of the current change, if any; a link to the ticket as
+will be rendered with a context that includes the ticket in its
+current state AFTER the workflow action has been applied; the ticket's
+values before any changes were made, as an `old_ticket` dictionary; the
+author and comment of the current change, if any; a link to the ticket as
 `$link`; and the project.
 
 All of these must be defined for each notification; the plugin will
@@ -122,7 +123,7 @@ new_ticket.subject = New ticket created
 ==== Notifications for all actions ====
 
 You can also set the special value `*` for a notification, which means
-it will be triggered on every workflow action including ticket creation:
+it will be triggered on every workflow action excluding ticket creation:
 
 {{{
 [ticket-workflow-notifications]
@@ -132,3 +133,29 @@ ticket_changed.recipients = watchful_user, another_watchful_user
 ticket_changed.subject = Ticket $ticket.id has changed!
 }}}
 
+To trigger a notification for every workflow action as well as ticket 
+creation, just specify both:
+{{{
+[ticket-workflow-notifications]
+ticket_changed = *, @created
+}}}
+
+
+==== Accessing old ticket values =====
+
+The ticket's old values are available in the notification templates.
+These values are provided in a Python dict named `old_values`.  The
+values provided are from before any changes were made to the ticket,
+whether by workflow operations or by direct user action.
+
+You can use this dictionary to set up a notification similar to Trac's
+built in ticket change email; for example:
+{{{
+[ticket-workflow-notifications]
+ticket_changed = *
+ticket_changed.body = Ticket changed by $change.author: $change.comment
+                      {% for field in old_ticket %}{% if old_ticket[field] != ticket[field] %}
+		      $field changed: ${old_ticket[field]} => ${ticket[field]}{% end %}{% end %}
+ticket_changed.recipients = $ticket.reporter
+ticket_changed.subject = Ticket $ticket.id has changed!
+}}}
