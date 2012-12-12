@@ -44,6 +44,25 @@ class TicketWorkflowNotifier(Component):
         ctx = self.build_template_context(req, ticket, name)
         section = self.config['ticket-workflow-notifications']
 
+        condition = section.get('%s.condition' % name, None)
+        if condition is not None:
+            condition_value = TextTemplate(condition.replace("\\n", "\n")
+                                     ).generate(**ctx).render(encoding=None).strip()
+            if condition_value != 'True':
+                self.log.debug("Skipping notification %s for ticket %s "
+                               "because condition '%s' did not evaluate to True (it evaluated to %s)" % (
+                        name, ticket.id if ticket.exists else "(new ticket)",
+                        condition, condition_value))
+                return False
+            else:
+                self.log.debug("Sending notification %s for ticket %s "
+                               "because condition '%s' did evaluate to True" % (
+                        name, ticket.id if ticket.exists else "(new ticket)", condition))
+        else:
+            self.log.debug("Sending notification %s for ticket %s "
+                           "because there was no condition" % (
+                    name, ticket.id if ticket.exists else "(new ticket)"))
+
         body = TextTemplate(section.get('%s.body' % name).replace("\\n", "\n")
                             ).generate(**ctx).render(encoding=None)
         subject = TextTemplate(section.get('%s.subject' % name).replace("\\n", "\n")

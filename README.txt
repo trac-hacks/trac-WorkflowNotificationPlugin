@@ -103,6 +103,34 @@ email address:
 notify_reporter_when_accepted.recipients = $ticket.reporter, trac-admin@hostname.com, trac_user
 }}}
 
+=== Conditional Notifications ===
+
+In addition to the required configuration fields described above, you can 
+optionally include a `.condition` definition for a notification.  If provided,
+this should be a Genshi text template which evaluates to the value True if and
+only if the notification should be sent.  If the template evaluates to any value
+other than True, the notification will be skipped.  
+
+If no `.condition` is provided, then the notification will be sent unconditionally
+when it is triggered.
+
+One use for this would be sending a notification when a ticket is resolved 'fixed':
+
+{{{
+[ticket-workflow-notifications]
+when_fixed = resolve
+when_fixed.body = Ticket $ticket.id has been fixed!  View it here: $link
+when_fixed.subject = Ticket $ticket.id is fixed!
+when_fixed.recipients = $ticket.cc
+when_fixed.condition = ${ticket.resolution == 'fixed'}
+}}}
+
+But you could get as complex as you want with this feature:
+
+{{{
+magic_word.condition = ${'notifyme' in change.comment and change.author != ticket.reporter}
+}}}
+
 ==== Notifications for new tickets ====
 
 Most notifications are configured to refer to one or more workflow actions, 
