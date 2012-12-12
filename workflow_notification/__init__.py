@@ -76,11 +76,17 @@ class TicketWorkflowNotifier(Component):
             self.env, template_name='ticket_notify_workflow_email.txt',
             recipients=recipients, data={'body': body})
 
-        arity = len(inspect.getargspec(notifier.notify)[0])
-        if arity == 3:  # Trac 0.12 and below
+        vars = inspect.getargspec(notifier.notify)[0]
+        if len(vars) == 3:  # Trac 0.12 and below
             args = [ticket.id, subject]
-        elif arity == 4: # Trac 0.13 and up have an additional `author` argument to trac.notification:NotifyEmail.notify
+        elif len(vars) == 4: # Trac 0.13 and up have an additional `author` argument to trac.notification:NotifyEmail.notify
             args = [ticket.id, subject, req.authname]
+        else:
+            self.log.error("Cannot send notification %s for ticket %s "
+                           "because this trac version has an unknown NotifyEmail.notify signature "
+                           "%s" % (name, ticket.id if ticket.exists else "(new ticket)", condition,
+                                   vars))
+            return False
         notifier.notify(*args)
         
     # ITicketActionController methods
