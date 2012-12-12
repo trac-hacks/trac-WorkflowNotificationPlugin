@@ -23,13 +23,14 @@ class TicketWorkflowNotifier(Component):
             elif '*' in actions_for_key and not action.startswith('@'):
                 yield key
             
-    def build_template_context(self, req, ticket):
+    def build_template_context(self, req, ticket, action):
         ctx = Chrome(self.env).populate_data(None, {'CRLF': CRLF})
         ctx['ticket'] = ticket
         ctx['change'] = {
             'author': req.authname,
             'comment': req.args.get("comment"),
             }
+        ctx['action'] = action
         ctx['link'] = self.env.abs_href.ticket(ticket.id)
 
         if ticket.id:
@@ -40,7 +41,7 @@ class TicketWorkflowNotifier(Component):
         return ctx
 
     def notify(self, req, ticket, name):
-        ctx = self.build_template_context(req, ticket)
+        ctx = self.build_template_context(req, ticket, name)
         section = self.config['ticket-workflow-notifications']
 
         body = TextTemplate(section.get('%s.body' % name).replace("\\n", "\n")
