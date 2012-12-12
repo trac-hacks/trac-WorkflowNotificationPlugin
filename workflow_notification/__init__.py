@@ -72,9 +72,16 @@ class TicketWorkflowNotifier(Component):
                                   ).generate(**ctx).render(encoding=None)
         recipients = [r.strip() for r in recipients.split(",")]
         
-        WorkflowNotifyEmail(self.env, template_name='ticket_notify_workflow_email.txt',
-                            recipients=recipients, data={'body': body}).notify(
-            ticket.id, subject, req.authname)
+        notifier = WorkflowNotifyEmail(
+            self.env, template_name='ticket_notify_workflow_email.txt',
+            recipients=recipients, data={'body': body})
+
+        arity = len(inspect.getargspec(notifier.notify)[0])
+        if arity == 3:  # Trac 0.12 and below
+            args = [ticket.id, subject]
+        elif arity == 4: # Trac 0.13 and up have an additional `author` argument to trac.notification:NotifyEmail.notify
+            args = [ticket.id, subject, req.authname]
+        notifier.notify(*args)
         
     # ITicketActionController methods
 
