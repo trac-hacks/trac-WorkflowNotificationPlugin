@@ -1,7 +1,9 @@
 import inspect
 import pkg_resources
+import sys
 
-from genshi.template.text import NewTextTemplate as TextTemplate
+from genshi.template.text import (NewTextTemplate as TextTemplate,
+                                  TemplateSyntaxError)
 from trac.admin.api import IAdminCommandProvider
 from trac.core import *
 from trac.config import *
@@ -15,7 +17,6 @@ class TicketWorkflowNotifier(Component):
                IAdminCommandProvider)
 
     def get_admin_commands(self):
-        import pdb; pdb.set_trace()
         return [
             ('workflow_notifications validate', '', 'validate configuration',
              None,
@@ -29,9 +30,20 @@ class TicketWorkflowNotifier(Component):
                 continue
             condition = section.get('%s.condition' % name, None)
             if condition is not None:
-                TextTemplate(condition)
+                try:
+                    TextTemplate(condition)
+                except TemplateSyntaxError, e:
+                    print >> sys.stderr, "Syntax error in %s.condition" % name
+                    print >> sys.stderr, condition
+                    raise e
             for key in 'body subject recipients'.split():
-                TextTemplate(section.get('%s.%s' % (name, key)))
+                val = section.get('%s.%s' % (name, key))
+                try:
+                    TextTemplate(val)
+                except TemplateSyntaxError, e:
+                    print >> sys.stderr, "Syntax error in %s.%s" % (name, key)
+                    print >> sys.stderr, val
+                    raise e
                         
     def notifications_for_action(self, action):
         section = self.config['ticket-workflow-notifications']
