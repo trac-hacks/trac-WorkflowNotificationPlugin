@@ -2,6 +2,7 @@ import inspect
 import pkg_resources
 
 from genshi.template.text import NewTextTemplate as TextTemplate
+from trac.admin.api import IAdminCommandProvider
 from trac.core import *
 from trac.config import *
 from trac.notification import NotifyEmail
@@ -10,8 +11,28 @@ from trac.util.text import CRLF
 from trac.web.chrome import Chrome, ITemplateProvider
 
 class TicketWorkflowNotifier(Component):
-    implements(ITicketChangeListener, ITicketActionController, ITemplateProvider)
+    implements(ITicketChangeListener, ITicketActionController, ITemplateProvider,
+               IAdminCommandProvider)
 
+    def get_admin_commands(self):
+        import pdb; pdb.set_trace()
+        return [
+            ('workflow_notifications validate', '', 'validate configuration',
+             None,
+             lambda: self.validate()),
+            ]
+
+    def validate(self):        
+        section = self.config['ticket-workflow-notifications']
+        for name in section:
+            if '.' in name:
+                continue
+            condition = section.get('%s.condition' % name, None)
+            if condition is not None:
+                TextTemplate(condition)
+            for key in 'body subject recipients'.split():
+                TextTemplate(section.get('%s.%s' % (name, key)))
+                        
     def notifications_for_action(self, action):
         section = self.config['ticket-workflow-notifications']
         for key in section:
