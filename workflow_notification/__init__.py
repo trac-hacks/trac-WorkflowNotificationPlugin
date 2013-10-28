@@ -4,7 +4,7 @@ import sys
 
 from genshi.template.text import (NewTextTemplate as TextTemplate,
                                   TemplateSyntaxError)
-from trac.admin.api import IAdminCommandProvider
+from trac.admin.api import IAdminCommandProvider, IAdminPanelProvider
 from trac.core import *
 from trac.config import *
 from trac.notification import NotifyEmail
@@ -14,7 +14,63 @@ from trac.web.chrome import Chrome, ITemplateProvider
 
 class TicketWorkflowNotifier(Component):
     implements(ITicketChangeListener, ITicketActionController, ITemplateProvider,
-               IAdminCommandProvider)
+               IAdminCommandProvider, IAdminPanelProvider)
+
+    def get_admin_panels(self, req):
+        """Return a list of available admin panels.
+        
+        The items returned by this function must be tuples of the form
+        `(category, category_label, page, page_label)`.
+        """
+        if req.perm.has_permission('TRAC_ADMIN'):
+            yield ('ticket', 'Ticket System', 
+                   "workflow_notification", "Workflow Notifications")
+
+    def render_admin_panel(self, req, category, page, path_info):
+
+        if path_info is None:
+            return self.render_admin_panel_list(req)
+        return self.render_admin_panel_detail(req, path_info)
+
+    def render_admin_panel_detail(self, req, name):
+        section = self.config['ticket-workflow-notifications']
+        rule = {}
+        rule['condition'] = section.get('%s.condition' % name, None)
+        for key in 'body subject recipients'.split():
+            val = section.get('%s.%s' % (name, key))
+            if key == 'recipients':
+                val = [i.strip() for i in val.split(",")]
+            rule[key] = val
+        rule['actions'] = [i.strip() for i in section.get(name).split(",")]
+        
+        data = {
+            'rule': rule,
+            'name': name,
+            }
+        return ('workflow_notification_rule_admin.html', data)
+
+    def render_admin_panel_list(self, req):
+
+        section = self.config['ticket-workflow-notifications']
+        notifications = {}
+
+        for name in section:
+            if '.' in name:
+                continue
+            rule = {}
+            rule['condition'] = section.get('%s.condition' % name, None)
+            for key in 'body subject recipients'.split():
+                val = section.get('%s.%s' % (name, key))
+                if key == 'recipients':
+                    val = [i.strip() for i in val.split(",")]
+                rule[key] = val
+            rule['actions'] = [i.strip() for i in section.get(name).split(",")]
+            notifications[name] = rule
+
+        data = {
+            'notifications': notifications,
+            }
+        return ('workflow_notification_admin.html', data)
 
     def get_admin_commands(self):
         return [

@@ -1,0 +1,59 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="admin.html" />
+  <head>
+    <title>Ticket Workflow Notification: $name</title>
+    <style type="text/css">
+      form#workflownotification div {
+        padding-bottom: 8px;
+      }
+      form#workflownotification label span {
+        display: inline-block;
+        width: 10em;
+        vertical-align: top;
+      }
+      form#workflownotification input[name], form#workflownotification textarea {
+        width: 60em;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Ticket Workflow Notification: $name</h2>
+    <form id="workflownotification" method="post">
+
+      <div>
+        <label><span>Actions:</span>
+          <input name="actions" value="${', '.join(rule.actions)}" />
+        </label>
+      </div>
+      <div>
+        <label><span>Recipients:</span>
+          <input name="recipients" value="${', '.join(rule.recipients)}" />
+        </label>
+      </div>
+      <div>
+        <label><span>Condition:</span>
+          <input name="condition" value="$rule.condition" />
+        </label>
+      </div>
+      <div>
+        <label><span>Message subject:</span>
+          <input name="subject" value="$rule.subject" />
+        </label>
+      </div>
+      <div>
+        <label><span>Message body:</span>
+          <textarea rows="8" name="body">$rule.body</textarea>
+        </label>
+      </div>
+
+      <div class="buttons">
+        <input type="submit" value="Apply changes" />
+      </div>
+    </form>
+  </body>
+</html>

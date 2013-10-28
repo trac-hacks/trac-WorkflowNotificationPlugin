@@ -1,0 +1,40 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="admin.html" />
+  <head>
+    <title>Ticket Workflow Notifications</title>
+  </head>
+  <body>
+    <h2>Ticket Workflow Notifications</h2>
+    <form method="post">
+
+      <table class="listing" id="workflownotificationlist">
+        <thead>
+          <tr><th class="sel">&nbsp;</th>
+            <th>Name</th><th>Subject</th><th>Recipients</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr py:for="name, rule in notifications.items()">
+            <td class="sel"><input type="checkbox" name="sel" value="$name" /></td>
+            <td class="name">
+              <a href="${panel_href(name)}">$name</a>
+            </td>
+            <td class="subject">$rule.subject</td>
+            <td class="recipients">${', '.join(rule.recipients)}</td>
+            <td class="actions">${', '.join(rule.actions)}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <textarea>${notifications}</textarea>
+      <div class="buttons">
+        <input type="submit" value="Apply changes" />
+      </div>
+    </form>
+  </body>
+</html>
