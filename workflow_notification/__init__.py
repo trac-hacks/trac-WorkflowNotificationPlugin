@@ -1,6 +1,7 @@
 import inspect
 import pkg_resources
 import sys
+from StringIO import StringIO
 
 from genshi.template.text import (NewTextTemplate as TextTemplate,
                                   TemplateSyntaxError)
@@ -10,7 +11,7 @@ from trac.config import *
 from trac.notification import NotifyEmail
 from trac.ticket.api import ITicketChangeListener, ITicketActionController, TicketSystem
 from trac.util.text import CRLF
-from trac.web.chrome import Chrome, ITemplateProvider
+from trac.web.chrome import Chrome, ITemplateProvider, add_warning, add_notice
 
 class TicketWorkflowNotifier(Component):
     implements(ITicketChangeListener, ITicketActionController, ITemplateProvider,
@@ -72,7 +73,42 @@ class TicketWorkflowNotifier(Component):
             'notifications': notifications,
             'newrule': newrule,
             }
-        return ('workflow_notification_admin.html', data)
+        if req.method == "GET":
+            return ('workflow_notification_admin.html', data)
+
+        if 'remove' in req.args:
+            to_remove = req.args['sel']
+            # @@TODO implement deletion, add info notice, redirect
+            return ('workflow_notification_admin.html', data)
+
+        assert 'add' in req.args #@@TODO
+        newrule.update({ #@@TODO fail gracefully if keys are missing
+            'name': req.args['name'],
+            'actions': req.args['actions'],
+            'recipients': req.args['recipients'],
+            'condition': req.args['condition'],
+            'subject': req.args['subject'],
+            'body': req.args['body'],
+            })
+        assert newrule['name'] not in section #@@TODO error message
+        self.config.set("ticket-workflow-notifications", newrule['name'], newrule['actions'])
+        for key in newrule:
+            if key == 'actions' or key == 'name': continue
+            self.config.set("ticket-workflow-notifications", "%s.%s" % (newrule['name'], key),
+                            newrule[key])
+        errs = StringIO()
+        try:
+            self.validate(ostream=errs)
+        except TemplateSyntaxError:
+            errs.seek(0)
+            add_warning(req, errs.read())
+            self.config.parse_if_needed(force=True)
+            return ('workflow_notification_admin.html', data)
+        else:
+            self.config.save()
+            add_notice(req, "Your new notification rule '%s' has been added", newrule['name'])
+            return req.redirect(".")
+            
 
     def get_admin_commands(self):
         return [
@@ -81,7 +117,7 @@ class TicketWorkflowNotifier(Component):
              lambda: self.validate()),
             ]
 
-    def validate(self):        
+    def validate(self, ostream=sys.stderr):        
         section = self.config['ticket-workflow-notifications']
         for name in section:
             if '.' in name:
@@ -91,16 +127,16 @@ class TicketWorkflowNotifier(Component):
                 try:
                     TextTemplate(condition)
                 except TemplateSyntaxError, e:
-                    print >> sys.stderr, "Syntax error in %s.condition" % name
-                    print >> sys.stderr, condition
+                    print >> ostream, "Syntax error in %s.condition" % name
+                    print >> ostream, condition
                     raise e
             for key in 'body subject recipients'.split():
                 val = section.get('%s.%s' % (name, key))
                 try:
                     TextTemplate(val)
                 except TemplateSyntaxError, e:
-                    print >> sys.stderr, "Syntax error in %s.%s" % (name, key)
-                    print >> sys.stderr, val
+                    print >> ostream, "Syntax error in %s.%s" % (name, key)
+                    print >> ostream, val
                     raise e
                         
     def notifications_for_action(self, action):
