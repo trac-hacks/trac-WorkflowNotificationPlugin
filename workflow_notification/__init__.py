@@ -67,8 +67,10 @@ class TicketWorkflowNotifier(Component):
             rule['actions'] = [i.strip() for i in section.get(name).split(",")]
             notifications[name] = rule
 
+        newrule = {}
         data = {
             'notifications': notifications,
+            'newrule': newrule,
             }
         return ('workflow_notification_admin.html', data)
 

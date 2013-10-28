@@ -7,6 +7,19 @@
   <xi:include href="admin.html" />
   <head>
     <title>Ticket Workflow Notifications</title>
+    <style type="text/css">
+      form#workflownotification div {
+        padding-bottom: 8px;
+      }
+      form#workflownotification label span {
+        display: inline-block;
+        width: 10em;
+        vertical-align: top;
+      }
+      form#workflownotification input:not([type]), form#workflownotification textarea {
+        width: 60em;
+      }
+    </style>
   </head>
   <body>
     <h2>Ticket Workflow Notifications</h2>
@@ -31,10 +44,48 @@
         </tbody>
       </table>
       
-      <textarea>${notifications}</textarea>
       <div class="buttons">
-        <input type="submit" value="Apply changes" />
+        <input type="submit" name="remove" value="Remove selected notification rules" />
       </div>
+    </form>
+
+    <hr />
+
+    <h3>Add New Notification Rule</h3>
+    <form id="workflownotification" method="post">
+
+      <div>
+        <label><span>Name:</span>
+          <input name="name" value="$newrule.name" />
+        </label>
+      </div>
+      <div>
+        <label><span>Actions:</span>
+          <input name="actions" value="${', '.join(newrule.actions)}" />
+        </label>
+      </div>
+      <div>
+        <label><span>Recipients:</span>
+          <input name="recipients" value="${', '.join(newrule.recipients)}" />
+        </label>
+      </div>
+      <div>
+        <label><span>Condition:</span>
+          <input name="condition" value="$newrule.condition" />
+        </label>
+      </div>
+      <div>
+        <label><span>Message subject:</span>
+          <input name="subject" value="$newrule.subject" />
+        </label>
+      </div>
+      <div>
+        <label><span>Message body:</span>
+          <textarea rows="8" name="body">$newrule.body</textarea>
+        </label>
+      </div>
+
+      <input type="submit" name="add" value="Add new notification rule" />
     </form>
   </body>
 </html>
