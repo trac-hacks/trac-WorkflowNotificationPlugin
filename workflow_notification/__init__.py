@@ -99,18 +99,31 @@ class TicketWorkflowNotifier(Component):
                     req.href("admin", "ticket", "workflow_notification"))
 
         assert 'add' in req.args #@@TODO error message
-        newrule.update({ #@@TODO fail gracefully if keys are missing
-            'name': req.args['name'],
-            'actions': req.args['actions'],
-            'recipients': req.args['recipients'],
-            'condition': req.args['condition'],
-            'subject': req.args['subject'],
-            'body': req.args['body'],
+
+        newrule.update({ 
+            'name': req.args.get('name', ''),
+            'actions': req.args.get('actions', ''),
+            'recipients': req.args.get('recipients', ''),
+            'condition': req.args.get('condition', ''),
+            'subject': req.args.get('subject', ''),
+            'body': req.args.get('body', ''),
             })
-        assert newrule['name'] not in section #@@TODO error message
+        
+        for key in 'name actions recipients subject body'.split():
+            if not req.args.get(key, '').strip():
+                add_warning(req, "Field '%s' is required." % key)
+                return ('workflow_notification_admin.html', data)
+
+        if newrule['name'] in section:
+            add_warning(req, "A rule named '%s' already exists.  Please modify or delete it instead." % newrule['name'])
+            return ('workflow_notification_admin.html', data)
+
         self.config.set("ticket-workflow-notifications", newrule['name'], newrule['actions'])
         for key in newrule:
-            if key == 'actions' or key == 'name': continue
+            if key == 'actions' or key == 'name': 
+                continue
+            if not newrule[key].strip():
+                continue
             self.config.set("ticket-workflow-notifications", "%s.%s" % (newrule['name'], key),
                             newrule[key])
         errs = StringIO()
