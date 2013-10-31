@@ -78,10 +78,27 @@ class TicketWorkflowNotifier(Component):
 
         if 'remove' in req.args:
             to_remove = req.args['sel']
-            # @@TODO implement deletion, add info notice, redirect
-            return ('workflow_notification_admin.html', data)
+            for name in to_remove:
+                section.remove(name)
+                for key in 'body subject recipients condition'.split():
+                    section.remove("%s.%s" % (name, key))
 
-        assert 'add' in req.args #@@TODO
+            errs = StringIO()
+            try:
+                self.validate(ostream=errs)
+            except TemplateSyntaxError:
+                errs.seek(0)
+                add_warning(req, errs.read())
+                self.config.parse_if_needed(force=True)
+                return ('workflow_notification_admin.html', data)
+            else:
+                self.config.save()
+                add_notice(req, "Deleted %s rules (%s)" % (
+                        len(to_remove), ", ".join(to_remove)))
+                return req.redirect(
+                    req.href("admin", "ticket", "workflow_notification"))
+
+        assert 'add' in req.args #@@TODO error message
         newrule.update({ #@@TODO fail gracefully if keys are missing
             'name': req.args['name'],
             'actions': req.args['actions'],
