@@ -48,7 +48,35 @@ class TicketWorkflowNotifier(Component):
             'rule': rule,
             'name': name,
             }
-        return ('workflow_notification_rule_admin.html', data)
+        if req.method == "GET":
+            return ('workflow_notification_rule_admin.html', data)
+        
+        for key in 'body subject condition recipients actions'.split():
+            if key in ("actions", "recipients"):
+                rule[key] = [i.strip() for i in req.args[key].split(",")]
+            else:
+                rule[key] = req.args[key] # @@TODO fail gracefully if keys are missing
+            if key == "actions":
+                self.config.set("ticket-workflow-notifications", name, ','.join(rule['actions']))
+            else:
+                if key == "recipients":
+                    self.config.set("ticket-workflow-notifications", 
+                                    "%s.recipients" % name, ','.join(rule[key]))
+                else:
+                    self.config.set("ticket-workflow-notifications", 
+                                    "%s.%s" % (name, key), rule[key])
+        errs = StringIO()
+        try:
+            self.validate(ostream=errs)
+        except TemplateSyntaxError:
+            errs.seek(0)
+            add_warning(req, errs.read())
+            self.config.parse_if_needed(force=True)
+            return ('workflow_notification_rule_admin.html', data)
+        else:
+            self.config.save()
+            add_notice(req, "Your changes have been saved")
+            return req.redirect(req.href("admin/ticket/workflow_notification/%s" % name))
 
     def render_admin_panel_list(self, req):
 
