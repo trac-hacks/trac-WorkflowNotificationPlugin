@@ -10,7 +10,7 @@ except:
     pass
 
 setup(name='trac-WorkflowNotificationPlugin',
-      version='0.4',
+      version='0.5',
       description="Configurable notifications for trac tickets tied to workflow actions",
       long_description=long_description,
       packages=['workflow_notification'],

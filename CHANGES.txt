@@ -1,3 +1,8 @@
+0.5 (2013-11-21)
+----------------
+
+ * Notifications can now be configured through Trac's web admin system.
+
 0.4 (2012-12-12)
 ----------------
 
