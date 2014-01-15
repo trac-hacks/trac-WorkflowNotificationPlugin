@@ -11,6 +11,7 @@ from trac.config import *
 from trac.notification import NotifyEmail
 from trac.ticket.api import ITicketChangeListener, ITicketActionController, TicketSystem
 from trac.util.text import CRLF
+from trac.util.translation import _
 from trac.web.chrome import Chrome, ITemplateProvider, add_warning, add_notice
 
 class TicketWorkflowNotifier(Component):
@@ -288,7 +289,20 @@ class TicketWorkflowNotifier(Component):
         return []
 
     def render_ticket_action_control(self, req, ticket, action):
-        return None, None, None
+        section = self.config['ticket-workflow-notifications']
+
+        hints = []
+        for name in self.notifications_for_action(action):
+            ctx = self.build_template_context(req, ticket, name)
+
+            subject = TextTemplate(section.get('%s.subject' % name).replace("\\n", "\n")
+                                   ).generate(**ctx).render(encoding=None)
+            subject = ' '.join(subject.splitlines())
+            recipients = TextTemplate(section.get('%s.recipients' % name).replace("\\n", "\n")
+                                      ).generate(**ctx).render(encoding=None)
+            hints.append(_('An email titled "%(subject)s" will be sent to the following recipients: %(recipients)s', subject=subject, recipients=recipients))
+        
+        return None, None, '. '.join(hints) + '.' if hints else None
 
     def get_ticket_changes(self, req, ticket, action):
         old_values = {}
