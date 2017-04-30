@@ -24,7 +24,7 @@ class TicketWorkflowNotifier(Component):
         The items returned by this function must be tuples of the form
         `(category, category_label, page, page_label)`.
         """
-        if req.perm.has_permission('TRAC_ADMIN'):
+        if req.perm.has_permission('TICKET_ADMIN'):
             yield ('ticket', 'Ticket System', 
                    "workflow_notification", "Workflow Notifications")
 
