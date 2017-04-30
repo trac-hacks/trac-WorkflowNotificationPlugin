@@ -1,3 +1,9 @@
+0.6 (2017-??-??)
+----------------
+
+ * Configuring notifications through Trac's web admin system now requires
+   TICKET_ADMIN only, not full TRAC_ADMIN.
+
 0.5 (2013-11-21)
 ----------------
 
