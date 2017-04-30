@@ -20,12 +20,12 @@ class TicketWorkflowNotifier(Component):
 
     def get_admin_panels(self, req):
         """Return a list of available admin panels.
-        
+
         The items returned by this function must be tuples of the form
         `(category, category_label, page, page_label)`.
         """
-        if req.perm.has_permission('TICKET_ADMIN'):
-            yield ('ticket', 'Ticket System', 
+        if 'TICKET_ADMIN' in req.perm('admin', 'ticket/workflow_notification'):
+            yield ('ticket', 'Ticket System',
                    "workflow_notification", "Workflow Notifications")
 
     def render_admin_panel(self, req, category, page, path_info):
@@ -44,14 +44,14 @@ class TicketWorkflowNotifier(Component):
                 val = [i.strip() for i in val.split(",")]
             rule[key] = val
         rule['actions'] = [i.strip() for i in section.get(name).split(",")]
-        
+
         data = {
             'rule': rule,
             'name': name,
             }
         if req.method == "GET":
             return ('workflow_notification_rule_admin.html', data)
-        
+
         for key in 'body subject condition recipients actions'.split():
             if key in ("actions", "recipients"):
                 rule[key] = [i.strip() for i in req.args[key].split(",")]
@@ -61,10 +61,10 @@ class TicketWorkflowNotifier(Component):
                 self.config.set("ticket-workflow-notifications", name, ','.join(rule['actions']))
             else:
                 if key == "recipients":
-                    self.config.set("ticket-workflow-notifications", 
+                    self.config.set("ticket-workflow-notifications",
                                     "%s.recipients" % name, ','.join(rule[key]))
                 else:
-                    self.config.set("ticket-workflow-notifications", 
+                    self.config.set("ticket-workflow-notifications",
                                     "%s.%s" % (name, key), rule[key])
         errs = StringIO()
         try:
@@ -129,7 +129,7 @@ class TicketWorkflowNotifier(Component):
 
         assert 'add' in req.args #@@TODO error message
 
-        newrule.update({ 
+        newrule.update({
             'name': req.args.get('name', ''),
             'actions': req.args.get('actions', ''),
             'recipients': req.args.get('recipients', ''),
@@ -137,7 +137,7 @@ class TicketWorkflowNotifier(Component):
             'subject': req.args.get('subject', ''),
             'body': req.args.get('body', ''),
             })
-        
+
         for key in 'name actions recipients subject body'.split():
             if not req.args.get(key, '').strip():
                 add_warning(req, "Field '%s' is required." % key)
@@ -149,7 +149,7 @@ class TicketWorkflowNotifier(Component):
 
         self.config.set("ticket-workflow-notifications", newrule['name'], newrule['actions'])
         for key in newrule:
-            if key == 'actions' or key == 'name': 
+            if key == 'actions' or key == 'name':
                 continue
             if not newrule[key].strip():
                 continue
@@ -167,7 +167,7 @@ class TicketWorkflowNotifier(Component):
             self.config.save()
             add_notice(req, "Your new notification rule '%s' has been added", newrule['name'])
             return req.redirect(".")
-            
+
 
     def get_admin_commands(self):
         return [
@@ -176,7 +176,7 @@ class TicketWorkflowNotifier(Component):
              lambda: self.validate()),
             ]
 
-    def validate(self, ostream=sys.stderr):        
+    def validate(self, ostream=sys.stderr):
         section = self.config['ticket-workflow-notifications']
         for name in section:
             if '.' in name:
@@ -197,7 +197,7 @@ class TicketWorkflowNotifier(Component):
                     print >> ostream, "Syntax error in %s.%s" % (name, key)
                     print >> ostream, val
                     raise e
-                        
+
     def notifications_for_action(self, action):
         section = self.config['ticket-workflow-notifications']
         for key in section:
@@ -208,7 +208,7 @@ class TicketWorkflowNotifier(Component):
                 yield key
             elif '*' in actions_for_key and not action.startswith('@'):
                 yield key
-            
+
     def build_template_context(self, req, ticket, action):
         ctx = Chrome(self.env).populate_data(None, {'CRLF': CRLF})
         ctx['ticket'] = ticket
@@ -257,7 +257,7 @@ class TicketWorkflowNotifier(Component):
         recipients = TextTemplate(section.get('%s.recipients' % name).replace("\\n", "\n")
                                   ).generate(**ctx).render(encoding=None)
         recipients = [r.strip() for r in recipients.split(",")]
-        
+
         notifier = WorkflowNotifyEmail(
             self.env, template_name='ticket_notify_workflow_email.txt',
             recipients=recipients, data={'body': body})
@@ -274,7 +274,7 @@ class TicketWorkflowNotifier(Component):
                                    vars))
             return False
         notifier.notify(*args)
-        
+
     # ITicketActionController methods
 
     def get_ticket_actions(self, req, ticket):
@@ -301,7 +301,7 @@ class TicketWorkflowNotifier(Component):
             recipients = TextTemplate(section.get('%s.recipients' % name).replace("\\n", "\n")
                                       ).generate(**ctx).render(encoding=None)
             hints.append(_('An email titled "%(subject)s" will be sent to the following recipients: %(recipients)s', subject=subject, recipients=recipients))
-        
+
         return None, None, '. '.join(hints) + '.' if hints else None
 
     def get_ticket_changes(self, req, ticket, action):
@@ -325,7 +325,7 @@ class TicketWorkflowNotifier(Component):
     def apply_action_side_effects(self, req, ticket, action):
         for notification in self.notifications_for_action(action):
             self.log.debug("Notification %s for ticket %s (action: %s)" % (
-                    notification, 
+                    notification,
                     ticket.id if ticket.exists else "(new ticket)",
                     action))
             self.notify(req, ticket, notification)
@@ -346,7 +346,7 @@ class TicketWorkflowNotifier(Component):
         self.apply_action_side_effects(req, ticket, '@created')
 
     def ticket_changed(self, ticket, comment, author, old_values):
-        return 
+        return
 
     # ITemplateProvider methods
 
