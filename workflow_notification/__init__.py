@@ -5,6 +5,7 @@ from StringIO import StringIO
 
 from genshi.template.text import (NewTextTemplate as TextTemplate,
                                   TemplateSyntaxError)
+from genshi.template.eval import UndefinedError
 from trac.admin.api import IAdminCommandProvider, IAdminPanelProvider
 from trac.core import *
 from trac.config import *
@@ -224,16 +225,48 @@ class TicketWorkflowNotifier(Component):
         else:
             old_values = {}
         ctx['old_ticket'] = old_values
+        
         return ctx
 
+    def add_change_history_to_ctx(self, ctx):
+        if 'change_history' in ctx:
+            return
+        ctx['change_history'] = []
+        if not ctx['ticket'].id:
+            return
+        with self.env.db_query as db:
+            for field, author, oldvalue, newvalue, time in self.env.db_query("""\
+            SELECT field, author, oldvalue, newvalue, time FROM ticket_change
+            WHERE ticket=%s ORDER BY time
+            """, (ctx['ticket'].id,)):
+                ctx['change_history'].append({
+                    "field": field,
+                    "author": author,
+                    "oldvalue": oldvalue,
+                    "newvalue": newvalue,
+                    "time": time,
+                })
+        
+    def render_template(self, expr, ctx):
+        _tmpl = TextTemplate(expr.replace("\\n", "\n"))
+        tmpl = _tmpl.generate(**ctx)
+        try:
+            tmpl = tmpl.render(encoding=None)
+        except UndefinedError, e:
+            if e.msg != '"change_history" not defined':
+                raise
+            self.add_change_history_to_ctx(ctx)
+            tmpl = _tmpl.generate(**ctx)
+            tmpl = tmpl.render(encoding=None)
+        return tmpl
+    
     def notify(self, req, ticket, name):
         ctx = self.build_template_context(req, ticket, name)
         section = self.config['ticket-workflow-notifications']
 
         condition = section.get('%s.condition' % name, None)
         if condition is not None:
-            condition_value = TextTemplate(condition.replace("\\n", "\n")
-                                     ).generate(**ctx).render(encoding=None).strip()
+            condition_value = self.render_template(condition, ctx).strip()
             if condition_value != 'True':
                 self.log.debug("Skipping notification %s for ticket %s "
                                "because condition '%s' did not evaluate to True (it evaluated to %s)" % (
@@ -249,13 +282,10 @@ class TicketWorkflowNotifier(Component):
                            "because there was no condition" % (
                     name, ticket.id if ticket.exists else "(new ticket)"))
 
-        body = TextTemplate(section.get('%s.body' % name).replace("\\n", "\n")
-                            ).generate(**ctx).render(encoding=None)
-        subject = TextTemplate(section.get('%s.subject' % name).replace("\\n", "\n")
-                               ).generate(**ctx).render(encoding=None)
+        body = self.render_template(section.get("%s.body" % name), ctx)
+        subject = self.render_template(section.get('%s.subject' % name), ctx)
         subject = ' '.join(subject.splitlines())
-        recipients = TextTemplate(section.get('%s.recipients' % name).replace("\\n", "\n")
-                                  ).generate(**ctx).render(encoding=None)
+        recipients = self.render_template(section.get('%s.recipients' % name), ctx)
         recipients = [r.strip() for r in recipients.split(",")]
 
         notifier = WorkflowNotifyEmail(
@@ -295,11 +325,10 @@ class TicketWorkflowNotifier(Component):
         for name in self.notifications_for_action(action):
             ctx = self.build_template_context(req, ticket, name)
 
-            subject = TextTemplate(section.get('%s.subject' % name).replace("\\n", "\n")
-                                   ).generate(**ctx).render(encoding=None)
+            subject = self.render_template(section.get('%s.subject' % name), ctx)
             subject = ' '.join(subject.splitlines())
-            recipients = TextTemplate(section.get('%s.recipients' % name).replace("\\n", "\n")
-                                      ).generate(**ctx).render(encoding=None)
+            recipients = self.render_template(section.get('%s.recipients' % name), ctx)
+                
             hints.append(_('An email titled "%(subject)s" will be sent to the following recipients: %(recipients)s', subject=subject, recipients=recipients))
 
         return None, None, '. '.join(hints) + '.' if hints else None

@@ -187,3 +187,39 @@ ticket_changed.body = Ticket changed by $change.author: $change.comment
 ticket_changed.recipients = $ticket.reporter
 ticket_changed.subject = Ticket $ticket.id has changed!
 }}}
+
+
+
+==== Emailing all commenters on a ticket ====
+
+You can access a list of all users who have participated on a ticket (leaving
+a comment, changing a field value) as well as the actions they took with the
+variable `change_history`. This will contain a list of dicts, each with an
+"author" key, as well as "field", "oldvalue", "newvalue", and "time", ordered
+from oldest to newest.
+
+This can be used to construct a recipient list for everyone who has left a comment
+on a ticket:
+
+{{{#!ini
+[ticket-workflow-notifications]
+ticket_changed = *
+ticket_changed.recipients = ${','.join(list(set(i['author'] for i in change_history if i['author'] != 'anonymous' and i['field'] == 'comment' and i['newvalue'])))}
+}}}
+
+Or you can email everyone who has ever participated on the ticket at all:
+{{{#!ini
+[ticket-workflow-notifications]
+ticket_changed = *
+ticket_changed.recipients = ${','.join(list(set(i['author'] for i in change_history if i['author'] != 'anonymous')))}
+}}}
+
+Or you can email everyone who has ever updated a particular field on the ticket:
+
+{{{#!ini
+[ticket-workflow-notifications]
+ticket_changed = *
+ticket_changed.recipients = ${','.join(list(set(i['author'] for i in participants if i['author'] != 'anonymous' and i['field'] == 'milestone')))}
+}}}
+
+This can also be used in the email subject, body, and condition templates.

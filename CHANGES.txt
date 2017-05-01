@@ -2,7 +2,12 @@
 ----------------
 
  * Configuring notifications through Trac's web admin system now requires
-   TICKET_ADMIN only, not full TRAC_ADMIN.
+   TICKET_ADMIN only, not full TRAC_ADMIN.  This permission check is also
+   FineGrainedPermissions-aware.
+ * Notification templates can now access a `change_history` variable to email
+   all commenters on a ticket, display a full history of ticket changes in
+   the email body, and other use cases.
+
 
 0.5 (2013-11-21)
 ----------------
