@@ -219,7 +219,7 @@ Or you can email everyone who has ever updated a particular field on the ticket:
 {{{#!ini
 [ticket-workflow-notifications]
 ticket_changed = *
-ticket_changed.recipients = ${','.join(list(set(i['author'] for i in participants if i['author'] != 'anonymous' and i['field'] == 'milestone')))}
+ticket_changed.recipients = ${','.join(list(set(i['author'] for i in change_history if i['author'] != 'anonymous' and i['field'] == 'milestone')))}
 }}}
 
 This can also be used in the email subject, body, and condition templates.
