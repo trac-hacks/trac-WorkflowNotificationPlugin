@@ -1,3 +1,5 @@
+# Description
+
 WorkflowNotificationPlugin enables flexible configuration of email
 notifications tied to ticket workflow changes.
 
@@ -26,3 +28,26 @@ to those settings, independent of this plugin's emails.
 
 For docs on installation, configuration, and examples, please refer to
 https://trac-hacks.org/wiki/WorkflowNotificationPlugin
+
+# Release Steps
+
+1. Edit version in `setup.py`, and set `tag_build = ` in `setup.cfg`.
+2. Tag the release:
+
+    ```
+    git tag <version>
+    git push --tags
+    ```
+
+3. Build the distributables:
+
+    ```
+    rm -r build dist
+    python setup.py sdist bdist_wheel
+    ```
+
+4. Upload to pypi:
+
+    ```
+    twine upload dist/*.tag.gz dist/*.whl`
+    ```
